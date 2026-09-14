@@ -116,7 +116,7 @@ The code is still in `login_codes` after a failed send. With the default SQLite 
 
 ```sh
 cd backend
-sqlite3 family_kanban.db "SELECT email, code FROM login_codes;"
+sqlite3 family_kanban.db "SELECT email, code, expires_at FROM login_codes;"
 ```
 
 Use that code on the `/auth` form to finish sign-in, then fix Resend config so the next request emails correctly.

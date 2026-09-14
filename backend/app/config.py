@@ -25,3 +25,12 @@ def get_resend_api_key() -> str:
 
 def get_email_from() -> str:
     return os.getenv("EMAIL_FROM", "").strip()
+
+
+def get_login_code_ttl_minutes() -> int:
+    raw = os.getenv("LOGIN_CODE_TTL_MINUTES", "5").strip() or "5"
+    try:
+        minutes = int(raw)
+    except ValueError:
+        minutes = 5
+    return max(1, minutes)

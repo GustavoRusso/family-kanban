@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Protocol
 
 from app.models.auth import Session, User
@@ -23,9 +24,9 @@ class Store(Protocol):
 
     def create_user(self, *, email: str, name: str) -> User: ...
 
-    def set_code(self, email: str, code: str) -> None: ...
+    def set_code(self, email: str, code: str, *, expires_at: datetime) -> None: ...
 
-    def get_code(self, email: str) -> str | None: ...
+    def get_code(self, email: str) -> tuple[str, datetime] | None: ...
 
     def pop_code(self, email: str) -> str | None: ...
 

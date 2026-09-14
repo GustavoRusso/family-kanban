@@ -23,6 +23,7 @@ class LoginCodeRow(Base):
 
     email: Mapped[str] = mapped_column(String(320), primary_key=True)
     code: Mapped[str] = mapped_column(String(16))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 class FamilyRow(Base):

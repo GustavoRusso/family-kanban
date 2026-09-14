@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
+
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
 
@@ -55,7 +58,10 @@ def test_request_code_fails_when_email_not_configured(engine, monkeypatch) -> No
         # Code was persisted before the send failure.
         with Session() as session:
             store = SqlAlchemyStore(session)
-            assert store.get_code("maya@example.com") is not None
+            stored = store.get_code("maya@example.com")
+            assert stored is not None
+            assert stored[0]
+            assert stored[1] > datetime.now(timezone.utc)
 
     application.dependency_overrides.clear()
 
@@ -76,7 +82,25 @@ def test_verify_rejects_wrong_code(client: TestClient) -> None:
         json={"email": "leo@example.com", "code": "000000"},
     )
     assert response.status_code == 400
-    assert "message" in response.json()
+    assert "doesn't match" in response.json()["message"]
+
+
+def test_verify_rejects_expired_code(client: TestClient, engine) -> None:
+    code = request_code(client, "maya@example.com")
+    issued_at = datetime.now(timezone.utc)
+
+    with patch("app.auth.service._utcnow", return_value=issued_at + timedelta(minutes=6)):
+        response = client.post(
+            "/api/v1/auth/verify",
+            json={"email": "maya@example.com", "code": code},
+        )
+    assert response.status_code == 400
+    assert "expired" in response.json()["message"].lower()
+
+    Session = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+    with Session() as session:
+        store = SqlAlchemyStore(session)
+        assert store.get_code("maya@example.com") is None
 
 
 def test_same_email_returns_same_user_id(client: TestClient) -> None:

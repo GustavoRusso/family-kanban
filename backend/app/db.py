@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Generator
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -46,12 +46,34 @@ engine = create_db_engine()
 SessionLocal = _make_session_factory(engine)
 
 
+def _ensure_login_code_expires_at(bind: Engine) -> None:
+    """Add login_codes.expires_at when missing; clear codes issued without TTL."""
+    insp = inspect(bind)
+    if "login_codes" not in insp.get_table_names():
+        return
+    columns = {col["name"] for col in insp.get_columns("login_codes")}
+    if "expires_at" in columns:
+        return
+
+    dialect = bind.dialect.name
+    if dialect == "sqlite":
+        ddl = "ALTER TABLE login_codes ADD COLUMN expires_at DATETIME"
+    else:
+        ddl = "ALTER TABLE login_codes ADD COLUMN expires_at TIMESTAMP WITH TIME ZONE"
+
+    with bind.begin() as conn:
+        conn.execute(text(ddl))
+        conn.execute(text("DELETE FROM login_codes"))
+
+
 def init_db(bind: Engine | None = None) -> None:
     """Create tables if they do not exist (fine until migrations are added)."""
     # Import models so metadata is registered.
     import app.orm  # noqa: F401
 
-    Base.metadata.create_all(bind=bind or engine)
+    target = bind or engine
+    Base.metadata.create_all(bind=target)
+    _ensure_login_code_expires_at(target)
 
 
 def get_session() -> Generator[Session, None, None]:

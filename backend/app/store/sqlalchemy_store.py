@@ -77,18 +77,23 @@ class SqlAlchemyStore:
         self._session.flush()
         return User(id=row.id, email=row.email, name=row.name)
 
-    def set_code(self, email: str, code: str) -> None:
+    def set_code(self, email: str, code: str, *, expires_at: datetime) -> None:
         row = self._session.get(LoginCodeRow, email)
         if row is None:
-            self._session.add(LoginCodeRow(email=email, code=code))
+            self._session.add(
+                LoginCodeRow(email=email, code=code, expires_at=expires_at)
+            )
         else:
             row.code = code
+            row.expires_at = expires_at
         # Commit before email send so the code survives a delivery failure.
         self._session.commit()
 
-    def get_code(self, email: str) -> str | None:
+    def get_code(self, email: str) -> tuple[str, datetime] | None:
         row = self._session.get(LoginCodeRow, email)
-        return None if row is None else row.code
+        if row is None:
+            return None
+        return row.code, _ensure_utc(row.expires_at) or _utcnow()
 
     def pop_code(self, email: str) -> str | None:
         row = self._session.get(LoginCodeRow, email)
@@ -96,7 +101,8 @@ class SqlAlchemyStore:
             return None
         code = row.code
         self._session.delete(row)
-        self._session.flush()
+        # Commit so expiry/cleanup survives AppError rollback on the request session.
+        self._session.commit()
         return code
 
     def first_family_id(self, user_id: str) -> str | None:
