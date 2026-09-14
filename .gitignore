@@ -20,6 +20,9 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Local env (shared by DevContainer, backend, frontend — use .env.example)
+.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

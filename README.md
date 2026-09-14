@@ -15,7 +15,22 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Prefer the **DevContainer** so Node, Python, and PostgreSQL are ready without host installs.
+
+1. Open this repository in VS Code or Cursor.
+2. Reopen in Container (Dev Containers).
+3. When the container finishes setup:
+
+```sh
+cd frontend
+npm run dev
+```
+
+The container includes Node 22, Python 3.12, and PostgreSQL (`db` service). Shared config for the DB (and later backend + frontend) lives in [`.env`](.env) (created from [`.env.example`](.env.example) on first setup). Planned layout: `frontend/`, `backend/`, and a shared `openapi.yaml` at the repo root.
+
+### Host-only (frontend)
+
+If you prefer not to use the DevContainer, you need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ```sh
 git clone <this-repository-url>

@@ -1,0 +1,48 @@
+{
+  "name": "Family Kanban",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/family-kanban",
+  "initializeCommand": "bash -c 'test -f .env || cp .env.example .env'",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    }
+  },
+  "forwardPorts": [5173, 8000, 5432],
+  "portsAttributes": {
+    "5173": {
+      "label": "Frontend (Vite)",
+      "onAutoForward": "notify"
+    },
+    "8000": {
+      "label": "Backend API",
+      "onAutoForward": "silent"
+    },
+    "5432": {
+      "label": "PostgreSQL",
+      "onAutoForward": "silent"
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-python.python",
+        "42Crunch.vscode-openapi"
+      ],
+      "settings": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true,
+        "[python]": {
+          "editor.defaultFormatter": "ms-python.python"
+        }
+      }
+    }
+  }
+}
