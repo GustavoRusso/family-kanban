@@ -105,7 +105,7 @@ function AuthPage() {
                 />
                 {devCode ? (
                   <p className="text-xs text-muted-foreground">
-                    Demo mode — your code is <strong>{devCode}</strong>.
+                    Dev hint — your code is <strong>{devCode}</strong>.
                   </p>
                 ) : null}
               </div>
@@ -129,11 +129,6 @@ function AuthPage() {
             </Button>
           )}
         </div>
-
-        <p className="mt-6 text-xs text-muted-foreground">
-          Try the demo family with <strong>maya@example.com</strong>, <strong>leo@example.com</strong>{" "}
-          or <strong>nina@example.com</strong>.
-        </p>
       </div>
     </div>
   );
