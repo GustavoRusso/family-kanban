@@ -2,11 +2,9 @@
 
 This file is the single entry point for every coding agent.
 
-
 Humans use [README.md](README.md) for a short product introduction.
 
-Product specification: [_docs/plan.md](_docs/plan.md).
-
+Product specification: [\_docs/plan.md](_docs/plan.md).
 
 ## Development environment
 
@@ -27,3 +25,9 @@ When you rename or move a tracked file, always use `git mv <old> <new>` (not a p
 Centralize every backend call in one services layer, and create a mock implementation of it so the whole app runs without a real backend. When the real API exists, the services layer should target the OpenAPI contract in `openapi.yaml`.
 
 Add tests.
+
+For backend, use uv for dependency management. a few useful commands:
+
+uv sync
+uv add <PACKAGE-NAME>
+uv run python <PYTHON-FILE>
