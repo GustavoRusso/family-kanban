@@ -31,7 +31,7 @@ interface Props {
   title: string;
   subtitle: string;
   /** Restrict the board to one person's commitments (My commitments view). */
-  onlyUserId?: string;
+  onlyUserId?: string | undefined;
 }
 
 export function Board({ title, subtitle, onlyUserId }: Props) {

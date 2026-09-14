@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as FamilyRouteImport } from './routes/family'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as MineRouteImport } from './routes/mine'
 import { Route as PointsRouteImport } from './routes/points'
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FamilyRoute = FamilyRouteImport.update({
+  id: '/family',
+  path: '/family',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryRoute = HistoryRouteImport.update({
@@ -44,6 +50,7 @@ const PointsRoute = PointsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/family': typeof FamilyRoute
   '/history': typeof HistoryRoute
   '/mine': typeof MineRoute
   '/points': typeof PointsRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/family': typeof FamilyRoute
   '/history': typeof HistoryRoute
   '/mine': typeof MineRoute
   '/points': typeof PointsRoute
@@ -59,21 +67,23 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/family': typeof FamilyRoute
   '/history': typeof HistoryRoute
   '/mine': typeof MineRoute
   '/points': typeof PointsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/history' | '/mine' | '/points'
+  fullPaths: '/' | '/auth' | '/family' | '/history' | '/mine' | '/points'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/history' | '/mine' | '/points'
-  id: '__root__' | '/' | '/auth' | '/history' | '/mine' | '/points'
+  to: '/' | '/auth' | '/family' | '/history' | '/mine' | '/points'
+  id: '__root__' | '/' | '/auth' | '/family' | '/history' | '/mine' | '/points'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  FamilyRoute: typeof FamilyRoute
   HistoryRoute: typeof HistoryRoute
   MineRoute: typeof MineRoute
   PointsRoute: typeof PointsRoute
@@ -93,6 +103,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/family': {
+      id: '/family'
+      path: '/family'
+      fullPath: '/family'
+      preLoaderRoute: typeof FamilyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -122,6 +139,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  FamilyRoute: FamilyRoute,
   HistoryRoute: HistoryRoute,
   MineRoute: MineRoute,
   PointsRoute: PointsRoute,

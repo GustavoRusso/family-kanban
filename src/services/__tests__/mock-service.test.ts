@@ -48,8 +48,8 @@ describe("families", () => {
     expect(joined.id).toBe(family.id);
     const members = await s.families.members(family.id);
     expect(members).toHaveLength(2);
-    expect(members[0].role).toBe("admin");
-    expect(members[1].role).toBe("member");
+    expect(members[0]!.role).toBe("admin");
+    expect(members[1]!.role).toBe("member");
   });
 });
 
@@ -83,7 +83,7 @@ describe("commitment lifecycle", () => {
   it("creates commitments in Backlog", async () => {
     const c = await newCard();
     expect(c.status).toBe("backlog");
-    expect(c.history[0].kind).toBe("created");
+    expect(c.history[0]!.kind).toBe("created");
   });
 
   it("refuses points below 1", async () => {
@@ -212,6 +212,6 @@ describe("commitment lifecycle", () => {
     }
     const ledger = await s.points.ledger(familyId);
     expect(ledger).toHaveLength(2);
-    expect(ledger[0].confirmedAt >= ledger[1].confirmedAt).toBe(true);
+    expect(ledger[0]!.confirmedAt >= ledger[1]!.confirmedAt).toBe(true);
   });
 });

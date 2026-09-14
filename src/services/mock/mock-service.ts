@@ -181,14 +181,17 @@ export function createMockService(options: MockOptions = {}): KanbanService {
         if (db.codes[normalized] !== code.trim())
           throw new RuleError("That code doesn't match. Try again.");
         delete db.codes[normalized];
-        let user = db.users.find((u) => u.email === normalized);
-        if (!user) {
-          user = { id: `u-${id()}`, email: normalized, name: normalized.split("@")[0] };
-          db.users.push(user);
-        }
-        const families = db.members.filter((m) => m.userId === user!.id);
-        db.session = { user, activeFamilyId: families[0]?.familyId ?? null };
-        return delay(clone(db.session));
+        const existing = db.users.find((u) => u.email === normalized);
+        const user: User = existing ?? {
+          id: `u-${id()}`,
+          email: normalized,
+          name: normalized.split("@")[0] ?? normalized,
+        };
+        if (!existing) db.users.push(user);
+        const families = db.members.filter((m) => m.userId === user.id);
+        const session: Session = { user, activeFamilyId: families[0]?.familyId ?? null };
+        db.session = session;
+        return delay(clone(session));
       },
       async currentSession() {
         return delay(db.session ? clone(db.session) : null);
