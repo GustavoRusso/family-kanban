@@ -4,6 +4,7 @@ from fastapi import APIRouter, Response
 
 from app.auth import service
 from app.auth.deps import OptionalSessionDep, RequireSessionDep, StoreDep
+from app.email.deps import EmailSenderDep
 from app.models.auth import (
     AuthSuccess,
     RequestCodeRequest,
@@ -16,8 +17,12 @@ router = APIRouter(prefix="/auth")
 
 
 @router.post("/code", response_model=RequestCodeResponse)
-def request_code(body: RequestCodeRequest, store: StoreDep) -> RequestCodeResponse:
-    return service.request_code(store, body.email)
+def request_code(
+    body: RequestCodeRequest,
+    store: StoreDep,
+    email_sender: EmailSenderDep,
+) -> RequestCodeResponse:
+    return service.request_code(store, email_sender, body.email)
 
 
 @router.post("/verify", response_model=AuthSuccess)

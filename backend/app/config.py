@@ -17,3 +17,11 @@ DEFAULT_DATABASE_URL = "sqlite:///./family_kanban.db"
 
 def get_database_url() -> str:
     return os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL).strip() or DEFAULT_DATABASE_URL
+
+
+def get_resend_api_key() -> str:
+    return os.getenv("RESEND_API_KEY", "").strip()
+
+
+def get_email_from() -> str:
+    return os.getenv("EMAIL_FROM", "").strip()

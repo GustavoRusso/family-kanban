@@ -23,7 +23,7 @@ export function createApiService(): KanbanService {
   return {
     auth: {
       async requestCode(email) {
-        return api<{ devCode?: string | null }>("POST", "/auth/code", { email });
+        await api<Record<string, never>>("POST", "/auth/code", { email });
       },
       async verifyCode(email, code) {
         const result = await api<AuthSuccess>("POST", "/auth/verify", { email, code });

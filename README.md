@@ -39,6 +39,8 @@ In dev, Vite proxies `/api` to `http://localhost:8000`, so the UI can call same-
 
 Requires [uv](https://docs.astral.sh/uv/) on `PATH`. In the DevContainer, `post-create` installs uv and runs `uv sync` when `backend/pyproject.toml` exists. The API persists with SQLAlchemy; `DATABASE_URL` in [`.env`](.env) selects the database (SQLite by default; Postgres later). Contract: [`openapi.yaml`](openapi.yaml).
 
+Sign-in codes are emailed with [Resend](https://resend.com). Set `RESEND_API_KEY` and `EMAIL_FROM` in [`.env`](.env) (see [`.env.example`](.env.example)). Full walkthrough: [`_docs/resend-setup.md`](_docs/resend-setup.md). If a send fails, the code is still stored — with SQLite: `sqlite3 backend/family_kanban.db "SELECT email, code FROM login_codes;"`.
+
 The container includes Node 22, Python 3.12, and a PostgreSQL (`db`) service for when you switch `DATABASE_URL`. Shared config lives in [`.env`](.env) (from [`.env.example`](.env.example) on first setup). Layout: `frontend/`, `backend/`, and `openapi.yaml` at the repo root.
 
 ### Git over SSH (agent forwarding)

@@ -33,7 +33,6 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [codeSent, setCodeSent] = useState(false);
-  const [devCode, setDevCode] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -44,9 +43,8 @@ function AuthPage() {
   async function sendCode() {
     setBusy(true);
     try {
-      const result = await services.auth.requestCode(email);
+      await services.auth.requestCode(email);
       setCodeSent(true);
-      setDevCode(result.devCode ?? null);
       toast.success("We sent you a one-time code.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Couldn't send the code.");
@@ -103,11 +101,6 @@ function AuthPage() {
                   onChange={(e) => setCode(e.target.value)}
                   placeholder="6-digit code"
                 />
-                {devCode ? (
-                  <p className="text-xs text-muted-foreground">
-                    Dev hint — your code is <strong>{devCode}</strong>.
-                  </p>
-                ) : null}
               </div>
               <Button onClick={verify} disabled={busy || code.length < 6}>
                 Sign in
@@ -116,7 +109,6 @@ function AuthPage() {
                 variant="ghost"
                 onClick={() => {
                   setCodeSent(false);
-                  setDevCode(null);
                   setCode("");
                 }}
               >

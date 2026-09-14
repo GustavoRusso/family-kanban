@@ -9,6 +9,7 @@ dependencies = [
     "pydantic[email]>=2.9.0",
     "sqlalchemy>=2.0.53",
     "python-dotenv>=1.2.3",
+    "resend>=2.45.0",
 ]
 
 [dependency-groups]

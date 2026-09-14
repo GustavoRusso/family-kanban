@@ -83,7 +83,8 @@ class SqlAlchemyStore:
             self._session.add(LoginCodeRow(email=email, code=code))
         else:
             row.code = code
-        self._session.flush()
+        # Commit before email send so the code survives a delivery failure.
+        self._session.commit()
 
     def get_code(self, email: str) -> str | None:
         row = self._session.get(LoginCodeRow, email)

@@ -5,6 +5,7 @@ from __future__ import annotations
 import random
 import re
 
+from app.email.sender import EmailSender
 from app.errors import AppError
 from app.models.auth import AuthSuccess, RequestCodeResponse, Session
 from app.store.base import Store
@@ -16,13 +17,16 @@ def normalize_email(email: str) -> str:
     return email.strip().lower()
 
 
-def request_code(store: Store, email: str) -> RequestCodeResponse:
+def request_code(
+    store: Store, email_sender: EmailSender, email: str
+) -> RequestCodeResponse:
     normalized = normalize_email(email)
     if not _EMAIL_RE.match(normalized):
         raise AppError("Enter a valid email address.")
     code = str(random.randint(100000, 999999))
     store.set_code(normalized, code)
-    return RequestCodeResponse(devCode=code)
+    email_sender.send_login_code(normalized, code)
+    return RequestCodeResponse()
 
 
 def verify_code(store: Store, email: str, code: str) -> AuthSuccess:

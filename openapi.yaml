@@ -6,7 +6,8 @@ info:
     HTTP contract expected by the Family Kanban frontend (`frontend/src/services`).
 
     Maps 1:1 to the `KanbanService` interface. Passwordless email + one-time code
-    auth; Bearer token on every authenticated route.
+    auth (codes emailed via Resend; never returned in API responses). Bearer token
+    on every authenticated route.
 
 servers:
   - url: /api/v1
@@ -26,8 +27,10 @@ paths:
       tags: [auth]
       summary: Send a one-time sign-in code to an email
       description: |
-        Starts passwordless sign-in. Unknown emails are fine — the account is
-        created on successful verification. No authentication required.
+        Starts passwordless sign-in. Persists a one-time code, then emails it
+        via Resend. Unknown emails are fine — the account is created on
+        successful verification. The code is never returned in the response.
+        No authentication required.
       security: []
       requestBody:
         required: true
@@ -37,7 +40,7 @@ paths:
               $ref: "#/components/schemas/RequestCodeRequest"
       responses:
         "200":
-          description: Code sent (mock/dev may echo the code)
+          description: Code emailed successfully (body is empty)
           content:
             application/json:
               schema:
@@ -776,12 +779,10 @@ components:
 
     RequestCodeResponse:
       type: object
-      properties:
-        devCode:
-          type: ["string", "null"]
-          description: |
-            Present in mock/development so the UI can show the code.
-            Omitted (or null) in production when email delivery is real.
+      description: |
+        Empty object. The one-time code is delivered by email only and is never
+        included in the API response.
+      additionalProperties: false
 
     VerifyCodeRequest:
       type: object

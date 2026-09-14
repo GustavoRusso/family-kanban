@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class User(BaseModel):
@@ -27,7 +27,7 @@ class RequestCodeRequest(BaseModel):
 
 
 class RequestCodeResponse(BaseModel):
-    devCode: str | None = None
+    """Empty body; the one-time code is delivered by email only."""
 
 
 class VerifyCodeRequest(BaseModel):

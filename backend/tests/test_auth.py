@@ -1,20 +1,63 @@
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import sessionmaker
 
+from app.db import get_session
+from app.email.deps import get_email_sender
+from app.email.sender import ResendEmailSender
+from app.main import create_app
+from app.store.sqlalchemy_store import SqlAlchemyStore
 from tests.helpers import auth_header, request_code, sign_in
 
 
-def test_request_code_returns_dev_code(client: TestClient) -> None:
-    body = request_code(client, "maya@example.com")
-    assert body["devCode"]
-    assert isinstance(body["devCode"], str)
+def test_request_code_does_not_echo_code(client: TestClient) -> None:
+    code = request_code(client, "maya@example.com")
+    assert isinstance(code, str)
+    assert len(code) == 6
 
 
 def test_request_code_rejects_invalid_email(client: TestClient) -> None:
     response = client.post("/api/v1/auth/code", json={"email": "not-an-email"})
     assert response.status_code == 400
     assert "message" in response.json()
+
+
+def test_request_code_fails_when_email_not_configured(engine, monkeypatch) -> None:
+    monkeypatch.delenv("RESEND_API_KEY", raising=False)
+    monkeypatch.delenv("EMAIL_FROM", raising=False)
+
+    Session = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+
+    def override_get_session():
+        session = Session()
+        try:
+            yield session
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    application = create_app()
+    application.dependency_overrides[get_session] = override_get_session
+    application.dependency_overrides[get_email_sender] = lambda: ResendEmailSender()
+
+    with TestClient(application) as client:
+        response = client.post(
+            "/api/v1/auth/code",
+            json={"email": "maya@example.com"},
+        )
+        assert response.status_code == 400
+        assert "Email is not configured" in response.json()["message"]
+
+        # Code was persisted before the send failure.
+        with Session() as session:
+            store = SqlAlchemyStore(session)
+            assert store.get_code("maya@example.com") is not None
+
+    application.dependency_overrides.clear()
 
 
 def test_verify_auto_creates_account_and_normalizes_email(client: TestClient) -> None:

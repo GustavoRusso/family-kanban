@@ -2,20 +2,32 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
+from app.email.sender import RecordingEmailSender
 
-def request_code(client: TestClient, email: str) -> dict:
+
+def _email_sender(client: TestClient) -> RecordingEmailSender:
+    sender = getattr(client.app.state, "email_sender", None)
+    assert isinstance(sender, RecordingEmailSender)
+    return sender
+
+
+def request_code(client: TestClient, email: str) -> str:
+    """Request a login code; returns the code captured by the test email sender."""
     response = client.post("/api/v1/auth/code", json={"email": email})
     assert response.status_code == 200, response.text
     body = response.json()
-    assert "devCode" in body
-    return body
+    assert "devCode" not in body
+    assert body == {}
+    code = _email_sender(client).last_code_for(email)
+    assert code is not None, "expected test email sender to record a code"
+    return code
 
 
 def sign_in(client: TestClient, email: str = "maya@example.com") -> dict:
-    code_body = request_code(client, email)
+    code = request_code(client, email)
     response = client.post(
         "/api/v1/auth/verify",
-        json={"email": email, "code": code_body["devCode"]},
+        json={"email": email, "code": code},
     )
     assert response.status_code == 200, response.text
     body = response.json()
