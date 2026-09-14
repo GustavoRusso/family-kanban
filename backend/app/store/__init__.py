@@ -1,1 +1,5 @@
-"""Persistence abstraction and in-memory store (filled in later steps)."""
+"""Persistence abstraction and in-memory store."""
+
+from app.store.memory import InMemoryStore
+
+__all__ = ["InMemoryStore"]
