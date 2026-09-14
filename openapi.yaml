@@ -1,0 +1,1035 @@
+openapi: 3.1.0
+info:
+  title: Family Kanban API
+  version: 1.0.0
+  description: |
+    HTTP contract expected by the Family Kanban frontend (`frontend/src/services`).
+
+    Maps 1:1 to the `KanbanService` interface. Passwordless email + one-time code
+    auth; Bearer token on every authenticated route.
+
+servers:
+  - url: /api/v1
+    description: Versioned API base path
+
+tags:
+  - name: auth
+  - name: families
+  - name: commitments
+  - name: points
+  - name: history
+
+paths:
+  /auth/code:
+    post:
+      operationId: requestCode
+      tags: [auth]
+      summary: Send a one-time sign-in code to an email
+      description: |
+        Starts passwordless sign-in. Unknown emails are fine — the account is
+        created on successful verification. No authentication required.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestCodeRequest"
+      responses:
+        "200":
+          description: Code sent (mock/dev may echo the code)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestCodeResponse"
+        "400":
+          $ref: "#/components/responses/RuleError"
+
+  /auth/verify:
+    post:
+      operationId: verifyCode
+      tags: [auth]
+      summary: Verify the one-time code and establish a session
+      description: |
+        Validates the code. If the email has no account yet, creates one
+        automatically. Returns a session plus an access token for subsequent
+        requests. No authentication required.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyCodeRequest"
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSuccess"
+        "400":
+          $ref: "#/components/responses/RuleError"
+
+  /auth/session:
+    get:
+      operationId: currentSession
+      tags: [auth]
+      summary: Return the current session, or null if not signed in
+      description: |
+        Optional authentication. With a valid Bearer token, returns the session.
+        Without a token (or with an invalid/expired one), returns `null` with
+        HTTP 200 — not 401 — so the client can bootstrap cleanly.
+      security:
+        - {}
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current session or null
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Session"
+                  - type: "null"
+
+  /auth/sign-out:
+    post:
+      operationId: signOut
+      tags: [auth]
+      summary: End the current session
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Signed out
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /families:
+    get:
+      operationId: listMine
+      tags: [families]
+      summary: List families the signed-in user belongs to
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Families for the current user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Family"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createFamily
+      tags: [families]
+      summary: Create a family (caller becomes admin, family becomes active)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFamilyRequest"
+      responses:
+        "201":
+          description: Family created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Family"
+        "400":
+          $ref: "#/components/responses/RuleError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /families/join:
+    post:
+      operationId: joinByToken
+      tags: [families]
+      summary: Join a family by QR / join-token code
+      description: |
+        Adds the caller as a member (role `member`) if not already in the
+        family, and sets that family as the active family on the session.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinFamilyRequest"
+      responses:
+        "200":
+          description: Joined (or already a member); family is now active
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Family"
+        "400":
+          $ref: "#/components/responses/RuleError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /families/{familyId}:
+    parameters:
+      - $ref: "#/components/parameters/familyId"
+    get:
+      operationId: getFamily
+      tags: [families]
+      summary: Get a family by id
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Family
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Family"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: renameFamily
+      tags: [families]
+      summary: Rename a family (admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameFamilyRequest"
+      responses:
+        "200":
+          description: Updated family
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Family"
+        "400":
+          $ref: "#/components/responses/RuleError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /families/{familyId}/activate:
+    parameters:
+      - $ref: "#/components/parameters/familyId"
+    post:
+      operationId: setActiveFamily
+      tags: [families]
+      summary: Set the caller's active family
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Updated session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /families/{familyId}/members:
+    parameters:
+      - $ref: "#/components/parameters/familyId"
+    get:
+      operationId: listMembers
+      tags: [families]
+      summary: List members of a family
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Member"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /families/{familyId}/members/{userId}:
+    parameters:
+      - $ref: "#/components/parameters/familyId"
+      - $ref: "#/components/parameters/userId"
+    delete:
+      operationId: removeMember
+      tags: [families]
+      summary: Remove a member from a family (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Member removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /families/{familyId}/commitments:
+    parameters:
+      - $ref: "#/components/parameters/familyId"
+    get:
+      operationId: listCommitments
+      tags: [commitments]
+      summary: List all commitments for a family (board + outcomes)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Commitments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Commitment"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: createCommitment
+      tags: [commitments]
+      summary: Create a commitment in Backlog
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommitmentInput"
+      responses:
+        "201":
+          description: Commitment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Commitment"
+        "400":
+          $ref: "#/components/responses/RuleError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /commitments/{commitmentId}:
+    parameters:
+      - $ref: "#/components/parameters/commitmentId"
+    patch:
+      operationId: updateCommitment
+      tags: [commitments]
+      summary: Update commitment fields (Backlog or Ready only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommitmentPatch"
+      responses:
+        "200":
+          description: Updated commitment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Commitment"
+        "400":
+          $ref: "#/components/responses/RuleError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /commitments/{commitmentId}/move:
+    parameters:
+      - $ref: "#/components/parameters/commitmentId"
+    post:
+      operationId: moveCommitment
+      tags: [commitments]
+      summary: Move a commitment along the board columns
+      description: |
+        Allowed transitions (enforced server-side):
+
+        - `backlog` → `ready` — responsible person; points ≥ 1
+        - `ready` → `doing` — responsible person
+        - `doing` → `done` — responsible person
+        - `done` → `confirmed` — any other family member (prefer `/confirm`)
+        - `confirmed` → `doing` — any other family member (prefer `/unconfirm`)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveCommitmentRequest"
+      responses:
+        "200":
+          description: Commitment after the move
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Commitment"
+        "400":
+          $ref: "#/components/responses/RuleError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /commitments/{commitmentId}/confirm:
+    parameters:
+      - $ref: "#/components/parameters/commitmentId"
+    post:
+      operationId: confirmCommitment
+      tags: [commitments]
+      summary: Confirm a Done commitment (awards points)
+      description: Caller must not be the responsible person. Status becomes `confirmed`.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Confirmed commitment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Commitment"
+        "400":
+          $ref: "#/components/responses/RuleError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /commitments/{commitmentId}/unconfirm:
+    parameters:
+      - $ref: "#/components/parameters/commitmentId"
+    post:
+      operationId: unconfirmCommitment
+      tags: [commitments]
+      summary: Un-confirm a commitment (returns to Doing; points revoked)
+      description: Caller must not be the responsible person. Status becomes `doing`.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Un-confirmed commitment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Commitment"
+        "400":
+          $ref: "#/components/responses/RuleError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /commitments/{commitmentId}/cancel:
+    parameters:
+      - $ref: "#/components/parameters/commitmentId"
+    post:
+      operationId: cancelCommitment
+      tags: [commitments]
+      summary: Cancel a board commitment (responsible person only)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Cancelled commitment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Commitment"
+        "400":
+          $ref: "#/components/responses/RuleError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /commitments/{commitmentId}/restore:
+    parameters:
+      - $ref: "#/components/parameters/commitmentId"
+    post:
+      operationId: restoreCommitment
+      tags: [commitments]
+      summary: Restore a cancelled commitment to Backlog (responsible person only)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Restored commitment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Commitment"
+        "400":
+          $ref: "#/components/responses/RuleError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /commitments/{commitmentId}/archive:
+    parameters:
+      - $ref: "#/components/parameters/commitmentId"
+    post:
+      operationId: archiveCommitment
+      tags: [commitments]
+      summary: Archive a confirmed commitment (responsible person only)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Archived commitment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Commitment"
+        "400":
+          $ref: "#/components/responses/RuleError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /families/{familyId}/points/totals:
+    parameters:
+      - $ref: "#/components/parameters/familyId"
+    get:
+      operationId: pointsTotals
+      tags: [points]
+      summary: Per-member points totals for a family
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Totals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PointsTotal"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /families/{familyId}/points/ledger:
+    parameters:
+      - $ref: "#/components/parameters/familyId"
+    get:
+      operationId: pointsLedger
+      tags: [points]
+      summary: Points ledger (confirmed/archived), newest first
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Ledger entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PointsEntry"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /families/{familyId}/history:
+    parameters:
+      - $ref: "#/components/parameters/familyId"
+    get:
+      operationId: listHistory
+      tags: [history]
+      summary: Lightweight history of confirmed, archived, and cancelled commitments
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: History items, newest outcome first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HistoryItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+      description: |
+        Access token returned by `POST /auth/verify`. Send as
+        `Authorization: Bearer <accessToken>` on every authenticated route.
+
+  parameters:
+    familyId:
+      name: familyId
+      in: path
+      required: true
+      schema:
+        type: string
+    userId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+    commitmentId:
+      name: commitmentId
+      in: path
+      required: true
+      schema:
+        type: string
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid Bearer token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    Forbidden:
+      description: Authenticated but not allowed (e.g. not a family member, not admin)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    RuleError:
+      description: Domain / validation rule failure (maps to frontend `RuleError`)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+
+  schemas:
+    ErrorBody:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          description: Human-readable reason suitable for UI toasts
+
+    CommitmentType:
+      type: string
+      enum:
+        - promise
+        - request
+        - responsibility
+        - consequence
+        - reward
+
+    BoardStatus:
+      type: string
+      enum:
+        - backlog
+        - ready
+        - doing
+        - done
+        - confirmed
+
+    Status:
+      type: string
+      enum:
+        - backlog
+        - ready
+        - doing
+        - done
+        - confirmed
+        - archived
+        - cancelled
+
+    Role:
+      type: string
+      enum:
+        - admin
+        - member
+
+    HistoryEventKind:
+      type: string
+      enum:
+        - created
+        - updated
+        - moved
+        - confirmed
+        - unconfirmed
+        - cancelled
+        - restored
+        - archived
+
+    User:
+      type: object
+      required: [id, email, name]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+
+    Session:
+      type: object
+      required: [user, activeFamilyId]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        activeFamilyId:
+          type: ["string", "null"]
+
+    AuthSuccess:
+      type: object
+      required: [user, activeFamilyId, accessToken]
+      description: |
+        Session fields plus the Bearer token. Frontend session state uses
+        `user` + `activeFamilyId`; the client stores `accessToken` for
+        `Authorization` headers.
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        activeFamilyId:
+          type: ["string", "null"]
+        accessToken:
+          type: string
+
+    RequestCodeRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    RequestCodeResponse:
+      type: object
+      properties:
+        devCode:
+          type: ["string", "null"]
+          description: |
+            Present in mock/development so the UI can show the code.
+            Omitted (or null) in production when email delivery is real.
+
+    VerifyCodeRequest:
+      type: object
+      required: [email, code]
+      properties:
+        email:
+          type: string
+          format: email
+        code:
+          type: string
+
+    Family:
+      type: object
+      required: [id, name, joinToken]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        joinToken:
+          type: string
+          description: Code embedded in the family QR invite
+
+    Member:
+      type: object
+      required: [userId, familyId, name, email, role]
+      properties:
+        userId:
+          type: string
+        familyId:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          $ref: "#/components/schemas/Role"
+
+    CreateFamilyRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+
+    JoinFamilyRequest:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          description: Family `joinToken` (case-insensitive)
+
+    RenameFamilyRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+
+    HistoryEvent:
+      type: object
+      required: [id, at, byUserId, kind, detail]
+      properties:
+        id:
+          type: string
+        at:
+          type: string
+          format: date-time
+        byUserId:
+          type: string
+        kind:
+          $ref: "#/components/schemas/HistoryEventKind"
+        detail:
+          type: string
+
+    Commitment:
+      type: object
+      required:
+        - id
+        - familyId
+        - title
+        - type
+        - responsibleId
+        - points
+        - status
+        - startedOnce
+        - createdAt
+        - history
+      properties:
+        id:
+          type: string
+        familyId:
+          type: string
+        title:
+          type: string
+        type:
+          $ref: "#/components/schemas/CommitmentType"
+        responsibleId:
+          type: string
+        points:
+          type: integer
+          minimum: 1
+        startDate:
+          type: ["string", "null"]
+          format: date-time
+        dueDate:
+          type: ["string", "null"]
+          format: date-time
+        note:
+          type: ["string", "null"]
+        status:
+          $ref: "#/components/schemas/Status"
+        startedOnce:
+          type: boolean
+          description: True once the card has entered Doing (or later)
+        createdAt:
+          type: string
+          format: date-time
+        confirmedAt:
+          type: ["string", "null"]
+          format: date-time
+        confirmedById:
+          type: ["string", "null"]
+        archivedAt:
+          type: ["string", "null"]
+          format: date-time
+        cancelledAt:
+          type: ["string", "null"]
+          format: date-time
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryEvent"
+
+    CommitmentInput:
+      type: object
+      required: [title, type, responsibleId, points]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        type:
+          $ref: "#/components/schemas/CommitmentType"
+        responsibleId:
+          type: string
+        points:
+          type: integer
+          minimum: 1
+        startDate:
+          type: ["string", "null"]
+          format: date-time
+        dueDate:
+          type: ["string", "null"]
+          format: date-time
+        note:
+          type: ["string", "null"]
+
+    CommitmentPatch:
+      type: object
+      description: Partial update; only Backlog/Ready commitments may be patched
+      properties:
+        title:
+          type: string
+          minLength: 1
+        type:
+          $ref: "#/components/schemas/CommitmentType"
+        responsibleId:
+          type: string
+        points:
+          type: integer
+          minimum: 1
+        startDate:
+          type: ["string", "null"]
+          format: date-time
+        dueDate:
+          type: ["string", "null"]
+          format: date-time
+        note:
+          type: ["string", "null"]
+
+    MoveCommitmentRequest:
+      type: object
+      required: [to]
+      properties:
+        to:
+          $ref: "#/components/schemas/BoardStatus"
+
+    PointsTotal:
+      type: object
+      required: [userId, name, total]
+      properties:
+        userId:
+          type: string
+        name:
+          type: string
+        total:
+          type: integer
+          minimum: 0
+
+    PointsEntry:
+      type: object
+      required: [commitmentId, userId, title, points, confirmedAt]
+      properties:
+        commitmentId:
+          type: string
+        userId:
+          type: string
+        title:
+          type: string
+        points:
+          type: integer
+          minimum: 1
+        confirmedAt:
+          type: string
+          format: date-time
+
+    HistoryItem:
+      type: object
+      required:
+        - commitmentId
+        - title
+        - type
+        - responsibleId
+        - responsibleName
+        - status
+        - outcomeDate
+        - points
+      properties:
+        commitmentId:
+          type: string
+        title:
+          type: string
+        type:
+          $ref: "#/components/schemas/CommitmentType"
+        responsibleId:
+          type: string
+        responsibleName:
+          type: string
+        status:
+          type: string
+          enum: [archived, cancelled, confirmed]
+        outcomeDate:
+          type: string
+          format: date-time
+        points:
+          type: integer
+          minimum: 1
