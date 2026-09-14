@@ -19,6 +19,13 @@
  */
 
 @theme inline {
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
+  --color-type-promise: var(--type-promise);
+  --color-type-request: var(--type-request);
+  --color-type-responsibility: var(--type-responsibility);
+  --color-type-consequence: var(--type-consequence);
+  --color-type-reward: var(--type-reward);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
