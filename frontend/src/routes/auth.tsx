@@ -32,7 +32,8 @@ function AuthPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
-  const [sentCode, setSentCode] = useState<string | null>(null);
+  const [codeSent, setCodeSent] = useState(false);
+  const [devCode, setDevCode] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -43,8 +44,9 @@ function AuthPage() {
   async function sendCode() {
     setBusy(true);
     try {
-      const { devCode } = await services.auth.requestCode(email);
-      setSentCode(devCode);
+      const result = await services.auth.requestCode(email);
+      setCodeSent(true);
+      setDevCode(result.devCode ?? null);
       toast.success("We sent you a one-time code.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Couldn't send the code.");
@@ -84,13 +86,13 @@ function AuthPage() {
               type="email"
               autoComplete="email"
               value={email}
-              disabled={!!sentCode}
+              disabled={codeSent}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
             />
           </div>
 
-          {sentCode ? (
+          {codeSent ? (
             <>
               <div className="grid gap-1.5">
                 <Label htmlFor="code">One-time code</Label>
@@ -101,9 +103,11 @@ function AuthPage() {
                   onChange={(e) => setCode(e.target.value)}
                   placeholder="6-digit code"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Demo mode — your code is <strong>{sentCode}</strong>.
-                </p>
+                {devCode ? (
+                  <p className="text-xs text-muted-foreground">
+                    Demo mode — your code is <strong>{devCode}</strong>.
+                  </p>
+                ) : null}
               </div>
               <Button onClick={verify} disabled={busy || code.length < 6}>
                 Sign in
@@ -111,7 +115,8 @@ function AuthPage() {
               <Button
                 variant="ghost"
                 onClick={() => {
-                  setSentCode(null);
+                  setCodeSent(false);
+                  setDevCode(null);
                   setCode("");
                 }}
               >

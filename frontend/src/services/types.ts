@@ -113,8 +113,8 @@ export class RuleError extends Error {}
 
 export interface KanbanService {
   auth: {
-    /** Sends a one-time code. Returns the code in mock mode so it can be shown on screen. */
-    requestCode(email: string): Promise<{ devCode: string }>;
+    /** Sends a one-time code. Dev/mock may echo `devCode` for on-screen display. */
+    requestCode(email: string): Promise<{ devCode?: string | null }>;
     /** Verifies the code; auto-creates the account when the email is unknown. */
     verifyCode(email: string, code: string): Promise<Session>;
     currentSession(): Promise<Session | null>;
