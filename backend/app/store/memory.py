@@ -234,3 +234,76 @@ class InMemoryStore:
         )
         self.commitments[commitment.id] = commitment
         return commitment
+
+    def points_totals(self, family_id: str) -> list:
+        from app.models.points import PointsTotal
+
+        members = self.list_members(family_id)
+        totals: list[PointsTotal] = []
+        for member in members:
+            total = sum(
+                c.points
+                for c in self.commitments.values()
+                if c.familyId == family_id
+                and c.responsibleId == member.userId
+                and c.status in (Status.confirmed, Status.archived)
+            )
+            totals.append(
+                PointsTotal(userId=member.userId, name=member.name, total=total)
+            )
+        return totals
+
+    def points_ledger(self, family_id: str) -> list:
+        from app.models.points import PointsEntry
+
+        entries: list[PointsEntry] = []
+        for c in self.commitments.values():
+            if c.familyId != family_id:
+                continue
+            if c.status not in (Status.confirmed, Status.archived):
+                continue
+            confirmed_at = c.confirmedAt
+            if confirmed_at is None:
+                for event in c.history:
+                    if event.kind == HistoryEventKind.confirmed:
+                        confirmed_at = event.at
+                        break
+            if confirmed_at is None:
+                confirmed_at = c.createdAt
+            entries.append(
+                PointsEntry(
+                    commitmentId=c.id,
+                    userId=c.responsibleId,
+                    title=c.title,
+                    points=c.points,
+                    confirmedAt=confirmed_at,
+                )
+            )
+        entries.sort(key=lambda e: e.confirmedAt, reverse=True)
+        return entries
+
+    def list_history(self, family_id: str) -> list:
+        from app.models.points import HistoryItem, HistoryOutcomeStatus
+
+        items: list[HistoryItem] = []
+        for c in self.commitments.values():
+            if c.familyId != family_id:
+                continue
+            if c.status not in (Status.archived, Status.cancelled, Status.confirmed):
+                continue
+            member = self.get_member(family_id, c.responsibleId)
+            outcome = c.archivedAt or c.cancelledAt or c.confirmedAt or c.createdAt
+            items.append(
+                HistoryItem(
+                    commitmentId=c.id,
+                    title=c.title,
+                    type=c.type,
+                    responsibleId=c.responsibleId,
+                    responsibleName=member.name if member else "Unknown",
+                    status=HistoryOutcomeStatus(c.status.value),
+                    outcomeDate=outcome,
+                    points=c.points,
+                )
+            )
+        items.sort(key=lambda i: i.outcomeDate, reverse=True)
+        return items

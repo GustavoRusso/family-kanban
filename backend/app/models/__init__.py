@@ -20,6 +20,7 @@ from app.models.commitments import (
     Status,
 )
 from app.models.common import ErrorBody
+from app.models.points import HistoryItem, PointsEntry, PointsTotal
 from app.models.families import (
     CreateFamilyRequest,
     Family,
@@ -41,9 +42,12 @@ __all__ = [
     "Family",
     "HistoryEvent",
     "HistoryEventKind",
+    "HistoryItem",
     "JoinFamilyRequest",
     "Member",
     "MoveCommitmentRequest",
+    "PointsEntry",
+    "PointsTotal",
     "RenameFamilyRequest",
     "RequestCodeRequest",
     "RequestCodeResponse",
