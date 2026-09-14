@@ -12,12 +12,16 @@ fi
 echo "Installing frontend dependencies..."
 (cd frontend && npm install)
 
-if [[ -f backend/requirements.txt ]]; then
+if [[ -f backend/pyproject.toml ]]; then
+  echo "Installing backend dependencies with uv..."
+  if ! command -v uv >/dev/null 2>&1; then
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="${HOME}/.local/bin:${PATH}"
+  fi
+  (cd backend && uv sync --group dev)
+elif [[ -f backend/requirements.txt ]]; then
   echo "Installing backend dependencies from requirements.txt..."
   pip install -r backend/requirements.txt
-elif [[ -f backend/pyproject.toml ]]; then
-  echo "Installing backend package (editable)..."
-  pip install -e backend
 else
   echo "No backend dependency file yet; skipping Python install."
 fi

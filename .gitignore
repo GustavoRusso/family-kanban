@@ -23,6 +23,17 @@ dist-ssr
 # Local env (shared by DevContainer, backend, frontend — use .env.example)
 .env
 
+# Python / uv
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.mypy_cache/
+.coverage
+htmlcov/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
