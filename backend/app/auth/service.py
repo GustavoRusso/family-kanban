@@ -7,7 +7,7 @@ import re
 
 from app.errors import AppError
 from app.models.auth import AuthSuccess, RequestCodeResponse, Session
-from app.store.memory import InMemoryStore
+from app.store.base import Store
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -16,7 +16,7 @@ def normalize_email(email: str) -> str:
     return email.strip().lower()
 
 
-def request_code(store: InMemoryStore, email: str) -> RequestCodeResponse:
+def request_code(store: Store, email: str) -> RequestCodeResponse:
     normalized = normalize_email(email)
     if not _EMAIL_RE.match(normalized):
         raise AppError("Enter a valid email address.")
@@ -25,7 +25,7 @@ def request_code(store: InMemoryStore, email: str) -> RequestCodeResponse:
     return RequestCodeResponse(devCode=code)
 
 
-def verify_code(store: InMemoryStore, email: str, code: str) -> AuthSuccess:
+def verify_code(store: Store, email: str, code: str) -> AuthSuccess:
     normalized = normalize_email(email)
     expected = store.get_code(normalized)
     if expected is None or expected != code.strip():
@@ -48,12 +48,12 @@ def verify_code(store: InMemoryStore, email: str, code: str) -> AuthSuccess:
     )
 
 
-def current_session(store: InMemoryStore, access_token: str | None) -> Session | None:
+def current_session(store: Store, access_token: str | None) -> Session | None:
     if not access_token:
         return None
     return store.get_session(access_token)
 
 
-def sign_out(store: InMemoryStore, access_token: str) -> None:
+def sign_out(store: Store, access_token: str) -> None:
     if not store.delete_session(access_token):
         raise AppError("You need to sign in first.", status_code=401)

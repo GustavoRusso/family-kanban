@@ -34,6 +34,10 @@ __pycache__/
 .coverage
 htmlcov/
 
+# Local SQLite databases
+*.db
+*.db-journal
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

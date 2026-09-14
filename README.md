@@ -37,9 +37,9 @@ Other useful targets: `make test`, `make test-frontend`, `make test-backend`, `m
 
 In dev, Vite proxies `/api` to `http://localhost:8000`, so the UI can call same-origin `/api/v1` without CORS. Optional `VITE_API_BASE_URL` in [`.env.example`](.env.example) overrides that base (empty = same-origin).
 
-Requires [uv](https://docs.astral.sh/uv/) on `PATH`. In the DevContainer, `post-create` installs uv and runs `uv sync` when `backend/pyproject.toml` exists. The API uses an in-memory mock store (no Postgres required yet). Contract: [`openapi.yaml`](openapi.yaml).
+Requires [uv](https://docs.astral.sh/uv/) on `PATH`. In the DevContainer, `post-create` installs uv and runs `uv sync` when `backend/pyproject.toml` exists. The API persists with SQLAlchemy; `DATABASE_URL` in [`.env`](.env) selects the database (SQLite by default; Postgres later). Contract: [`openapi.yaml`](openapi.yaml).
 
-The container includes Node 22, Python 3.12, and PostgreSQL (`db` service). Shared config lives in [`.env`](.env) (from [`.env.example`](.env.example) on first setup). Layout: `frontend/`, `backend/`, and `openapi.yaml` at the repo root.
+The container includes Node 22, Python 3.12, and a PostgreSQL (`db`) service for when you switch `DATABASE_URL`. Shared config lives in [`.env`](.env) (from [`.env.example`](.env.example) on first setup). Layout: `frontend/`, `backend/`, and `openapi.yaml` at the repo root.
 
 ### Git over SSH (agent forwarding)
 

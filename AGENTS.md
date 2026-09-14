@@ -8,7 +8,7 @@ Product specification: [\_docs/plan.md](_docs/plan.md).
 
 ## Development environment
 
-Assume the **DevContainer** (see [`.devcontainer/`](.devcontainer/)): Node 22, Python 3.12, and PostgreSQL via `DATABASE_URL` (`db` compose service). Shared env for DB, backend, and frontend lives in `.env` (from `.env.example`).
+Assume the **DevContainer** (see [`.devcontainer/`](.devcontainer/)): Node 22, Python 3.12, and SQLAlchemy via `DATABASE_URL` (SQLite by default; Postgres `db` compose service available for later). Shared env for DB, backend, and frontend lives in `.env` (from `.env.example`).
 
 Planned layout:
 

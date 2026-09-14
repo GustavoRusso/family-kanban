@@ -52,34 +52,30 @@ def _apply_move(
     user_id: str,
 ) -> Commitment:
     check(can_move(commitment, to, user_id))
+    from_status = commitment.status
     if to == BoardStatus.confirmed:
         commitment.confirmedAt = _utcnow()
         commitment.confirmedById = user_id
-        store.append_history(
-            commitment,
-            kind=HistoryEventKind.confirmed,
-            detail="Confirmed — points awarded",
-            by_user_id=user_id,
-        )
-    elif commitment.status == Status.confirmed and to == BoardStatus.doing:
+        kind = HistoryEventKind.confirmed
+        detail = "Confirmed — points awarded"
+    elif from_status == Status.confirmed and to == BoardStatus.doing:
         commitment.confirmedAt = None
         commitment.confirmedById = None
-        store.append_history(
-            commitment,
-            kind=HistoryEventKind.unconfirmed,
-            detail="Un-confirmed — points returned",
-            by_user_id=user_id,
-        )
+        kind = HistoryEventKind.unconfirmed
+        detail = "Un-confirmed — points returned"
     else:
-        store.append_history(
-            commitment,
-            kind=HistoryEventKind.moved,
-            detail=f"Moved {commitment.status.value} → {to.value}",
-            by_user_id=user_id,
-        )
+        kind = HistoryEventKind.moved
+        detail = f"Moved {from_status.value} → {to.value}"
     if to == BoardStatus.doing:
         commitment.startedOnce = True
+    # Persist after field updates so the DB matches the returned commitment.
     commitment.status = Status(to.value)
+    store.append_history(
+        commitment,
+        kind=kind,
+        detail=detail,
+        by_user_id=user_id,
+    )
     return commitment
 
 
