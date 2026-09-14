@@ -5,7 +5,16 @@ from __future__ import annotations
 import secrets
 from dataclasses import dataclass
 
+from datetime import datetime, timezone
+
 from app.models.auth import Session, User
+from app.models.commitments import (
+    Commitment,
+    CommitmentInput,
+    HistoryEvent,
+    HistoryEventKind,
+    Status,
+)
 from app.models.families import Family, Member, Role
 
 
@@ -13,6 +22,10 @@ from app.models.families import Family, Member, Role
 class StoredSession:
     user_id: str
     active_family_id: str | None
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class InMemoryStore:
@@ -25,6 +38,7 @@ class InMemoryStore:
         self.sessions: dict[str, StoredSession] = {}
         self.families: dict[str, Family] = {}
         self.members: list[Member] = []
+        self.commitments: dict[str, Commitment] = {}
 
     def new_id(self, prefix: str) -> str:
         return f"{prefix}-{secrets.token_hex(4)}"
@@ -161,3 +175,62 @@ class InMemoryStore:
             if not (m.familyId == family_id and m.userId == user_id)
         ]
         return len(self.members) < before
+
+    def get_commitment(self, commitment_id: str) -> Commitment | None:
+        return self.commitments.get(commitment_id)
+
+    def list_commitments(self, family_id: str) -> list[Commitment]:
+        return [c for c in self.commitments.values() if c.familyId == family_id]
+
+    def append_history(
+        self,
+        commitment: Commitment,
+        *,
+        kind: HistoryEventKind,
+        detail: str,
+        by_user_id: str,
+    ) -> None:
+        commitment.history.append(
+            HistoryEvent(
+                id=self.new_id("h"),
+                at=_utcnow(),
+                byUserId=by_user_id,
+                kind=kind,
+                detail=detail,
+            )
+        )
+
+    def create_commitment(
+        self,
+        family_id: str,
+        input_data: CommitmentInput,
+        *,
+        by_user_id: str,
+    ) -> Commitment:
+        commitment = Commitment(
+            id=self.new_id("c"),
+            familyId=family_id,
+            title=input_data.title.strip(),
+            type=input_data.type,
+            responsibleId=input_data.responsibleId,
+            points=input_data.points,
+            startDate=input_data.startDate,
+            dueDate=input_data.dueDate,
+            note=input_data.note,
+            status=Status.backlog,
+            startedOnce=False,
+            createdAt=_utcnow(),
+            confirmedAt=None,
+            confirmedById=None,
+            archivedAt=None,
+            cancelledAt=None,
+            history=[],
+        )
+        self.append_history(
+            commitment,
+            kind=HistoryEventKind.created,
+            detail="Created in Backlog",
+            by_user_id=by_user_id,
+        )
+        self.commitments[commitment.id] = commitment
+        return commitment

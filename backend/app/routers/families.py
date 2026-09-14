@@ -5,6 +5,7 @@ from fastapi import APIRouter, Response
 from app.auth.deps import RequireSessionDep, StoreDep
 from app.errors import AppError
 from app.models.auth import Session
+from app.models.commitments import Commitment, CommitmentInput
 from app.models.families import (
     CreateFamilyRequest,
     Family,
@@ -13,6 +14,7 @@ from app.models.families import (
     RenameFamilyRequest,
     Role,
 )
+from app.rules import check, validate_input
 
 router = APIRouter(prefix="/families")
 
@@ -133,3 +135,35 @@ def remove_member(
     if not store.remove_member(family_id, user_id):
         raise AppError("Member not found.", status_code=404)
     return Response(status_code=204)
+
+
+@router.get("/{family_id}/commitments", response_model=list[Commitment])
+def list_commitments(
+    family_id: str,
+    store: StoreDep,
+    auth: RequireSessionDep,
+) -> list[Commitment]:
+    session, _token = auth
+    _require_membership(store, family_id, session.user.id)
+    return store.list_commitments(family_id)
+
+
+@router.post("/{family_id}/commitments", response_model=Commitment, status_code=201)
+def create_commitment(
+    family_id: str,
+    body: CommitmentInput,
+    store: StoreDep,
+    auth: RequireSessionDep,
+) -> Commitment:
+    session, _token = auth
+    _require_membership(store, family_id, session.user.id)
+    check(
+        validate_input(
+            title=body.title,
+            points=body.points,
+            responsible_id=body.responsibleId,
+        )
+    )
+    if store.get_member(family_id, body.responsibleId) is None:
+        raise AppError("Responsible person must be a family member.")
+    return store.create_commitment(family_id, body, by_user_id=session.user.id)
