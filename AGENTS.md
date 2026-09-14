@@ -10,11 +10,13 @@ Product specification: [\_docs/plan.md](_docs/plan.md).
 
 Assume the **DevContainer** (see [`.devcontainer/`](.devcontainer/)): Node 22, Python 3.12, and SQLAlchemy via `DATABASE_URL` (SQLite by default; Postgres `db` compose service available for later). Shared env for DB, backend, and frontend lives in `.env` (from `.env.example`).
 
-Planned layout:
+Layout:
 
 - `frontend/` — web app
-- `backend/` — Python API (SQLAlchemy)
+- `backend/` — Python API (FastAPI + SQLAlchemy)
 - `openapi.yaml` — shared OpenAPI contract between front and back
+
+Sign-in codes are emailed with Resend (`RESEND_API_KEY`, `EMAIL_FROM`). Setup: [`_docs/resend-setup.md`](_docs/resend-setup.md).
 
 ## Git renames
 
@@ -22,7 +24,9 @@ When you rename or move a tracked file, always use `git mv <old> <new>` (not a p
 
 ## Architecture
 
-Centralize every backend call in one services layer, and create a mock implementation of it so the whole app runs without a real backend. When the real API exists, the services layer should target the OpenAPI contract in `openapi.yaml`.
+Centralize every backend call in the frontend services layer (`frontend/src/services/`). That layer talks to the real API over HTTP and must stay aligned with `openapi.yaml`.
+
+On the backend, persist through `SqlAlchemyStore` (no in-memory mock store). Keep domain rules in sync between `frontend/src/services/rules.ts` and `backend/app/rules.py`.
 
 Add tests.
 
