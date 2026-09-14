@@ -28,6 +28,23 @@ npm run dev
 
 The container includes Node 22, Python 3.12, and PostgreSQL (`db` service). Shared config for the DB (and later backend + frontend) lives in [`.env`](.env) (created from [`.env.example`](.env.example) on first setup). Planned layout: `frontend/`, `backend/`, and a shared `openapi.yaml` at the repo root.
 
+### Git over SSH (agent forwarding)
+
+Keep `origin` as `git@github.com:...`. The Dev Container forwards your **WSL** `ssh-agent` automatically — do not copy private keys into the container.
+
+In a **WSL** terminal (not inside the container):
+
+```sh
+# once per login / add to ~/.bash_profile or ~/.zprofile so it persists
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519   # or your GitHub key path
+ssh-add -l                  # must list the key
+```
+
+Then rebuild or reopen the Dev Container so Cursor picks up `SSH_AUTH_SOCK`. Inside the container, `ssh-add -l` should show the same key, and `git push -u origin main` should work.
+
+If the agent still is not forwarded, open the repo via **WSL** (not a Windows path) so Cursor uses the WSL agent instead of Windows OpenSSH.
+
 ### Host-only (frontend)
 
 If you prefer not to use the DevContainer, you need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).

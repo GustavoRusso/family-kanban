@@ -3,7 +3,7 @@
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
   "workspaceFolder": "/workspaces/family-kanban",
-  "initializeCommand": "bash -c 'test -f .env || cp .env.example .env'",
+  "initializeCommand": "bash -c 'test -f .env || cp .env.example .env; if [ -z \"${SSH_AUTH_SOCK:-}\" ]; then echo \"[devcontainer] SSH_AUTH_SOCK is unset on the host — start ssh-agent in WSL and ssh-add your GitHub key before reopen/rebuild so git push over SSH works.\" >&2; fi'",
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
       "version": "22"
