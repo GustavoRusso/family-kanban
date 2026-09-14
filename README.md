@@ -19,14 +19,26 @@ Prefer the **DevContainer** so Node, Python, and PostgreSQL are ready without ho
 
 1. Open this repository in VS Code or Cursor.
 2. Reopen in Container (Dev Containers).
-3. When the container finishes setup:
+3. When the container finishes setup, start the apps you need:
+
+**Frontend** (http://localhost:5173):
 
 ```sh
 cd frontend
 npm run dev
 ```
 
-The container includes Node 22, Python 3.12, and PostgreSQL (`db` service). Shared config for the DB (and later backend + frontend) lives in [`.env`](.env) (created from [`.env.example`](.env.example) on first setup). Planned layout: `frontend/`, `backend/`, and a shared `openapi.yaml` at the repo root.
+**Backend API** (http://localhost:8000 — docs at `/docs`):
+
+```sh
+cd backend
+uv sync --group dev   # first time, or after dependency changes
+uv run uvicorn app.main:app --reload --port 8000
+```
+
+Requires [uv](https://docs.astral.sh/uv/) on `PATH`. In the DevContainer, `post-create` installs uv and runs `uv sync` when `backend/pyproject.toml` exists. The API uses an in-memory mock store (no Postgres required yet). Contract: [`openapi.yaml`](openapi.yaml).
+
+The container includes Node 22, Python 3.12, and PostgreSQL (`db` service). Shared config lives in [`.env`](.env) (from [`.env.example`](.env.example) on first setup). Layout: `frontend/`, `backend/`, and `openapi.yaml` at the repo root.
 
 ### Git over SSH (agent forwarding)
 

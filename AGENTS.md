@@ -26,8 +26,12 @@ Centralize every backend call in one services layer, and create a mock implement
 
 Add tests.
 
-For backend, use uv for dependency management. a few useful commands:
+For backend, use uv for dependency management. Useful commands:
 
-uv sync
+```sh
+cd backend
+uv sync --group dev
 uv add <PACKAGE-NAME>
-uv run python <PYTHON-FILE>
+uv run pytest
+uv run uvicorn app.main:app --reload --port 8000
+```
