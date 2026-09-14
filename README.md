@@ -19,24 +19,23 @@ Prefer the **DevContainer** so Node, Python, and PostgreSQL are ready without ho
 
 1. Open this repository in VS Code or Cursor.
 2. Reopen in Container (Dev Containers).
-3. When the container finishes setup, start the apps you need:
-
-**Frontend** (http://localhost:5173):
+3. When the container finishes setup, use Make from the repo root:
 
 ```sh
-cd frontend
-npm run dev
+make install   # first time, or after dependency changes
+make dev       # backend + frontend together (Ctrl+C stops both)
 ```
 
-**Backend API** (http://localhost:8000 — docs at `/docs`):
+Or start them separately:
 
 ```sh
-cd backend
-uv sync --group dev   # first time, or after dependency changes
-uv run uvicorn app.main:app --reload --port 8000
+make frontend  # http://localhost:5173
+make backend   # http://localhost:8000 — docs at /docs
 ```
 
-Run the backend and frontend together for a full stack. In dev, Vite proxies `/api` to `http://localhost:8000`, so the UI can call same-origin `/api/v1` without CORS. Optional `VITE_API_BASE_URL` in [`.env.example`](.env.example) overrides that base (empty = same-origin).
+Other useful targets: `make test`, `make test-frontend`, `make test-backend`, `make lint`. Run `make help` for the full list.
+
+In dev, Vite proxies `/api` to `http://localhost:8000`, so the UI can call same-origin `/api/v1` without CORS. Optional `VITE_API_BASE_URL` in [`.env.example`](.env.example) overrides that base (empty = same-origin).
 
 Requires [uv](https://docs.astral.sh/uv/) on `PATH`. In the DevContainer, `post-create` installs uv and runs `uv sync` when `backend/pyproject.toml` exists. The API uses an in-memory mock store (no Postgres required yet). Contract: [`openapi.yaml`](openapi.yaml).
 
@@ -69,3 +68,5 @@ cd <repository-name>/frontend
 npm i
 npm run dev
 ```
+
+With Make and dependencies already installed: `make frontend` from the repo root.
