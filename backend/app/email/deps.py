@@ -6,10 +6,13 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.email.sender import EmailSender, ResendEmailSender
+from app.config import get_email_delivery
+from app.email.sender import ConsoleEmailSender, EmailSender, ResendEmailSender
 
 
 def get_email_sender() -> EmailSender:
+    if get_email_delivery() == "console":
+        return ConsoleEmailSender()
     return ResendEmailSender()
 
 

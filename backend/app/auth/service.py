@@ -33,7 +33,11 @@ def request_code(
     ttl_minutes = get_login_code_ttl_minutes()
     expires_at = _utcnow() + timedelta(minutes=ttl_minutes)
     store.set_code(normalized, code, expires_at=expires_at)
-    email_sender.send_login_code(normalized, code, ttl_minutes=ttl_minutes)
+    try:
+        email_sender.send_login_code(normalized, code, ttl_minutes=ttl_minutes)
+    except AppError:
+        store.pop_code(normalized)
+        raise
     return RequestCodeResponse()
 
 

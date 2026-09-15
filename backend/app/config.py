@@ -34,3 +34,11 @@ def get_login_code_ttl_minutes() -> int:
     except ValueError:
         minutes = 5
     return max(1, minutes)
+
+
+def get_email_delivery() -> str:
+    """Outbound login-code channel: 'resend' (default) or 'console' (local only)."""
+    raw = os.getenv("EMAIL_DELIVERY", "resend").strip().lower() or "resend"
+    if raw == "console":
+        return "console"
+    return "resend"

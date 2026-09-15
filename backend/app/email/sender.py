@@ -1,13 +1,16 @@
-"""Email sender protocol and Resend implementation."""
+"""Email sender protocol and Resend / console implementations."""
 
 from __future__ import annotations
 
+import logging
 from typing import Protocol
 
 import resend
 
 from app.config import get_email_from, get_login_code_ttl_minutes, get_resend_api_key
 from app.errors import AppError
+
+logger = logging.getLogger(__name__)
 
 
 class EmailSender(Protocol):
@@ -34,6 +37,22 @@ class RecordingEmailSender:
             if sent_email == normalized:
                 return code
         return None
+
+
+class ConsoleEmailSender:
+    """Local-dev sender: logs the code to the backend terminal (no network)."""
+
+    def send_login_code(
+        self, email: str, code: str, *, ttl_minutes: int | None = None
+    ) -> None:
+        minutes = ttl_minutes if ttl_minutes is not None else get_login_code_ttl_minutes()
+        logger.warning(
+            "EMAIL_DELIVERY=console — login code for %s is %s (expires in %s minute%s)",
+            email,
+            code,
+            minutes,
+            "" if minutes == 1 else "s",
+        )
 
 
 class ResendEmailSender:

@@ -1,19 +1,25 @@
 # Configure Resend for sign-in codes
 
-Family Kanban sends passwordless sign-in codes with [Resend](https://resend.com).
-The same path runs in local development and production: the code is saved in
-`login_codes`, then emailed. The API never returns the code to the UI.
+Family Kanban sends passwordless sign-in codes with [Resend](https://resend.com)
+by default. The code is saved in `login_codes` only after delivery succeeds (or
+when using local console delivery), then used to verify sign-in. The API never
+returns the code to the UI.
 
-Required environment variables (repo-root [`.env`](../.env), see [`.env.example`](../.env.example)):
+Required environment variables for Resend (repo-root [`.env`](../.env), see
+[`.env.example`](../.env.example)):
 
 | Variable | Purpose |
 | --- | --- |
 | `RESEND_API_KEY` | API key from the Resend dashboard |
 | `EMAIL_FROM` | From address, e.g. `Family Kanban <onboarding@resend.dev>` |
+| `EMAIL_DELIVERY` | `resend` (default) or `console` for local-only log delivery |
 
-If either is missing, `POST /api/v1/auth/code` fails with a clear error **after**
-the code is already stored in the database. The app still starts without these
-variables.
+If Resend is selected and either key/`EMAIL_FROM` is missing, `POST /api/v1/auth/code`
+fails with a clear error and **does not** leave a recoverable code in the database.
+The app still starts without these variables.
+
+For local development without Resend, set `EMAIL_DELIVERY=console`. The backend
+logs the code to the terminal; enter it on `/auth` as usual.
 
 ---
 
@@ -89,7 +95,8 @@ Official guides: [Resend domains](https://resend.com/docs/dashboard/domains/intr
 4. Confirm the email arrives with a 6-digit code.
 5. Enter the code and sign in.
 
-The UI must not show the code; only the email (or the DB recovery steps below) has it.
+The UI must not show the code; only the email (or the backend log when
+`EMAIL_DELIVERY=console`) has it.
 
 ---
 
@@ -110,15 +117,8 @@ You tried to send to an address that is not your Resend account email. Either:
 
 `EMAIL_FROM` must use a domain that is verified in Resend. Typo’d domains fail.
 
-### Local recovery when email fails
+### Local without Resend
 
-The code is still in `login_codes` after a failed send. With the default SQLite URL:
-
-```sh
-cd backend
-sqlite3 family_kanban.db "SELECT email, code, expires_at FROM login_codes;"
-```
-
-Use that code on the `/auth` form to finish sign-in, then fix Resend config so the next request emails correctly.
-
-For Postgres, query the same `login_codes` table with your usual SQL client.
+Set `EMAIL_DELIVERY=console` in `.env`, restart the backend, request a code, and
+read it from the backend terminal log. Fix Resend (or keep console for local)
+instead of querying the database — failed Resend sends remove the stored code.

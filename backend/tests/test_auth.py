@@ -29,6 +29,7 @@ def test_request_code_rejects_invalid_email(client: TestClient) -> None:
 def test_request_code_fails_when_email_not_configured(engine, monkeypatch) -> None:
     monkeypatch.delenv("RESEND_API_KEY", raising=False)
     monkeypatch.delenv("EMAIL_FROM", raising=False)
+    monkeypatch.setenv("EMAIL_DELIVERY", "resend")
 
     Session = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 
@@ -55,13 +56,58 @@ def test_request_code_fails_when_email_not_configured(engine, monkeypatch) -> No
         assert response.status_code == 400
         assert "Email is not configured" in response.json()["message"]
 
-        # Code was persisted before the send failure.
+        # Failed send must not leave a recoverable code in the DB.
+        with Session() as session:
+            store = SqlAlchemyStore(session)
+            assert store.get_code("maya@example.com") is None
+
+    application.dependency_overrides.clear()
+
+
+def test_console_delivery_stores_code_and_verify_works(engine, monkeypatch, caplog) -> None:
+    monkeypatch.setenv("EMAIL_DELIVERY", "console")
+
+    Session = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+
+    def override_get_session():
+        session = Session()
+        try:
+            yield session
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    application = create_app()
+    application.dependency_overrides[get_session] = override_get_session
+    # Use real get_email_sender so EMAIL_DELIVERY=console is honored.
+    with TestClient(application) as client:
+        with caplog.at_level("WARNING", logger="app.email.sender"):
+            response = client.post(
+                "/api/v1/auth/code",
+                json={"email": "maya@example.com"},
+            )
+        assert response.status_code == 200
+        assert response.json() == {}
+        assert "devCode" not in response.json()
+
         with Session() as session:
             store = SqlAlchemyStore(session)
             stored = store.get_code("maya@example.com")
             assert stored is not None
-            assert stored[0]
-            assert stored[1] > datetime.now(timezone.utc)
+            code, _expires = stored
+
+        assert code in caplog.text
+        assert "maya@example.com" in caplog.text
+
+        verify = client.post(
+            "/api/v1/auth/verify",
+            json={"email": "maya@example.com", "code": code},
+        )
+        assert verify.status_code == 200
+        assert verify.json()["user"]["email"] == "maya@example.com"
 
     application.dependency_overrides.clear()
 
