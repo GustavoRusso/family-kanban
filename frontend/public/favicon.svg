@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Family Kanban">
+  <rect width="64" height="64" rx="14" fill="#c45a3a"/>
+  <!-- back card -->
+  <rect x="14" y="12" width="28" height="28" rx="5" fill="#f7f1e8"/>
+  <rect x="18" y="17" width="14" height="4" rx="2" fill="#6ba3d4"/>
+  <!-- middle card -->
+  <rect x="18" y="18" width="28" height="28" rx="5" fill="#f7f1e8"/>
+  <rect x="22" y="23" width="14" height="4" rx="2" fill="#3aa8a0"/>
+  <!-- front card -->
+  <rect x="22" y="24" width="28" height="28" rx="5" fill="#f7f1e8"/>
+  <rect x="26" y="29" width="14" height="4" rx="2" fill="#d4a017"/>
+</svg>
