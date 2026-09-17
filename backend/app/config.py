@@ -10,14 +10,13 @@ from dotenv import load_dotenv
 # Load the repository .env for local convenience without overriding values
 # supplied by the process environment.
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-load_dotenv(_REPO_ROOT / ".env", override=False)
+load_dotenv(_REPO_ROOT / ".env")
 
 DEFAULT_DATABASE_URL = "sqlite:///./family_kanban.db"
 
 
 def get_database_url() -> str:
-    url = os.getenv("DATABASE_URL", "").strip()
-    return url or DEFAULT_DATABASE_URL
+    return os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL).strip() or DEFAULT_DATABASE_URL
 
 
 def get_resend_api_key() -> str:

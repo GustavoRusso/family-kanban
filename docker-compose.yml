@@ -2,7 +2,7 @@ services:
   app:
     image: mcr.microsoft.com/devcontainers/base:bookworm
     volumes:
-      - ..:/workspaces/family-kanban:cached
+      - .:/workspaces/family-kanban:cached
     command: sleep infinity
     env_file:
-      - ../.env
+      - .env
