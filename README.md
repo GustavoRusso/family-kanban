@@ -61,3 +61,68 @@ npm run dev
 ```
 
 With Make and dependencies already installed: `make frontend` from the repo root.
+
+## Production (single Linux VM)
+
+This repository keeps the local DevContainer intentionally lightweight and uses a separate production stack for deployment. The production workflow is defined in [`compose.production.yml`](compose.production.yml).
+
+### Requirements
+
+- Docker Engine + Docker Compose v2 on the target VM
+- A host environment file with non-secret runtime values (for example, a server `.env` file)
+- PostgreSQL credentials and application settings, but do not commit secrets to the repository
+
+### Environment
+
+Copy the example environment file and adjust the values for the VM:
+
+```sh
+cp .env.example .env
+```
+
+For production, set or override these values in the deployment environment:
+
+```env
+DATABASE_URL=postgresql+psycopg://family:family@db:5432/family_kanban
+POSTGRES_USER=family
+POSTGRES_PASSWORD=family
+POSTGRES_DB=family_kanban
+EMAIL_DELIVERY=console
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+Keep `RESEND_API_KEY` and `EMAIL_FROM` set only in the running server environment if you want real email delivery.
+
+### Start the stack
+
+From the repo root:
+
+```sh
+docker compose -f compose.production.yml up --build -d
+```
+
+This starts:
+
+- PostgreSQL on the internal Docker network
+- a one-shot migration job that runs Alembic migrations
+- the FastAPI app on `http://localhost:8000`
+- the frontend on `http://localhost:4173`
+
+### Check status
+
+```sh
+docker compose -f compose.production.yml ps
+docker compose -f compose.production.yml logs -f api
+```
+
+If you need to re-run the migrations manually:
+
+```sh
+docker compose -f compose.production.yml run --rm migration sh -lc 'uv run alembic upgrade head'
+```
+
+### Notes
+
+- The production stack is intentionally a simple direct-port deployment for a trusted VM or an environment behind existing ingress/TLS.
+- The database port is not published externally in the first stack; the app and database communicate over the internal Compose network.
+- The PostgreSQL data volume is persistent, but it is not a backup. Plan separate backup/restore steps for real operations.
