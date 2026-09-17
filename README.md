@@ -2,20 +2,9 @@
 
 **Family Kanban** helps a family see and keep the commitments they make to each other on a shared Kanban board.
 
-
-## Build with Lovable
-
-This project was built with [Lovable](https://lovable.dev).
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/bb2058ca-40a1-4c79-bf7b-738693d5d681).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
 ## Development
 
-Prefer the **DevContainer** so Node, Python, and PostgreSQL are ready without host installs.
+Prefer the **DevContainer** so Node and Python are ready without host installs. Local development uses the SQLite default and the Alembic migration contract for schema changes.
 
 1. Open this repository in VS Code or Cursor.
 2. Reopen in Container (Dev Containers).
@@ -37,11 +26,11 @@ Other useful targets: `make test`, `make test-frontend`, `make test-backend`, `m
 
 In dev, Vite proxies `/api` to `http://localhost:8000`, so the UI can call same-origin `/api/v1` without CORS. Optional `VITE_API_BASE_URL` in [`.env.example`](.env.example) overrides that base (empty = same-origin).
 
-Requires [uv](https://docs.astral.sh/uv/) on `PATH`. In the DevContainer, `post-create` installs uv and runs `uv sync` when `backend/pyproject.toml` exists. The API persists with SQLAlchemy; `DATABASE_URL` in [`.env`](.env) selects the database (SQLite by default; Postgres later). Contract: [`openapi.yaml`](openapi.yaml).
+Requires [uv](https://docs.astral.sh/uv/) on `PATH`. In the DevContainer, `post-create` installs uv and runs `uv sync` when `backend/pyproject.toml` exists. The API persists with SQLAlchemy and Alembic; `DATABASE_URL` in [`.env`](.env) selects the database (SQLite by default for local development; production uses PostgreSQL later). Contract: [`openapi.yaml`](openapi.yaml).
 
 Sign-in codes are emailed with [Resend](https://resend.com). Set `RESEND_API_KEY` and `EMAIL_FROM` in [`.env`](.env) (see [`.env.example`](.env.example)). Full walkthrough: [`_docs/resend-setup.md`](_docs/resend-setup.md). For local work without Resend, set `EMAIL_DELIVERY=console` and read the code from the backend log (the API never returns it). Codes expire after 5 minutes by default (`LOGIN_CODE_TTL_MINUTES`).
 
-The container includes Node 22, Python 3.12, and a PostgreSQL (`db`) service for when you switch `DATABASE_URL`. Shared config lives in [`.env`](.env) (from [`.env.example`](.env.example) on first setup). Layout: `frontend/`, `backend/`, and `openapi.yaml` at the repo root.
+The container includes Node 22 and Python 3.12. Shared config lives in [`.env`](.env) (from [`.env.example`](.env.example) on first setup). Layout: `frontend/`, `backend/`, and `openapi.yaml` at the repo root.
 
 ### Git over SSH (agent forwarding)
 

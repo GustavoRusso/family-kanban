@@ -12,7 +12,7 @@
       "version": "3.12"
     }
   },
-  "forwardPorts": [5173, 8000, 5432],
+  "forwardPorts": [5173, 8000],
   "portsAttributes": {
     "5173": {
       "label": "Frontend (Vite)",
@@ -20,10 +20,6 @@
     },
     "8000": {
       "label": "Backend API",
-      "onAutoForward": "silent"
-    },
-    "5432": {
-      "label": "PostgreSQL",
       "onAutoForward": "silent"
     }
   },
