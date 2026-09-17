@@ -6,9 +6,11 @@ Humans use [README.md](README.md) for a short product introduction.
 
 Product specification: [\_docs/plan.md](_docs/plan.md).
 
-## Development environment
+## Development environments
 
-Assume the **DevContainer** (see [`.devcontainer/`](.devcontainer/)): Node 22, Python 3.12, and SQLAlchemy via `DATABASE_URL` (SQLite by default; Postgres `db` compose service available for later). Shared env for DB, backend, and frontend lives in `.env` (from `.env.example`).
+Assume the **DevContainer** (see [`.devcontainer/`](.devcontainer/)) for agent coding: Node 22, Python 3.12, and the lightweight `compose.devcontainer.yml` workspace. Use `make dev` for reload-based development; its default database is SQLite through `DATABASE_URL`.
+
+Humans can run the stable local environment with the default `compose.yaml`. It builds the API and frontend, runs PostgreSQL and migrations, and keeps data in a named volume. Use `just local-up`, `just local-down`, and `just local-reset`; set `LOCAL_PROJECT`, `LOCAL_API_PORT`, and `LOCAL_FRONTEND_PORT` per checkout so branches do not share data or host ports.
 
 Layout:
 
@@ -26,7 +28,7 @@ When you rename or move a tracked file, always use `git mv <old> <new>` (not a p
 
 Centralize every backend call in the frontend services layer (`frontend/src/services/`). That layer talks to the real API over HTTP and must stay aligned with `openapi.yaml`.
 
-On the backend, persist through `SqlAlchemyStore` (no in-memory mock store). Keep domain rules in sync between `frontend/src/services/rules.ts` and `backend/app/rules.py`.
+On the backend, persist through `SqlAlchemyStore` (no in-memory mock store). Keep domain rules in sync between `frontend/src/services/rules.ts` and `backend/app/rules.py`. The stable local Compose environment is for human QA and integration checks; future CI and deployment Compose files may reuse its service topology but must keep environment-specific data, secrets, ports, and lifecycle separate.
 
 Add tests.
 

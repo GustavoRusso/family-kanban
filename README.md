@@ -4,7 +4,9 @@
 
 ## Development
 
-Prefer the **DevContainer** so Node and Python are ready without host installs. Local development uses the SQLite default and the Alembic migration contract for schema changes.
+This repository has two local workflows. Agents use the lightweight Dev Container for fast reload-based coding. Humans use the default Compose stack for a stable PostgreSQL-backed environment with built images and persistent data.
+
+### Agent development
 
 1. Open this repository in VS Code or Cursor.
 2. Reopen in Container (Dev Containers).
@@ -30,7 +32,29 @@ Requires [uv](https://docs.astral.sh/uv/) on `PATH`. In the DevContainer, `post-
 
 Sign-in codes are emailed with [Resend](https://resend.com). Set `RESEND_API_KEY` and `EMAIL_FROM` in [`.env`](.env) (see [`.env.example`](.env.example)). Full walkthrough: [`_docs/resend-setup.md`](_docs/resend-setup.md). For local work without Resend, set `EMAIL_DELIVERY=console` and read the code from the backend log (the API never returns it). Codes expire after 5 minutes by default (`LOGIN_CODE_TTL_MINUTES`).
 
-The container includes Node 22 and Python 3.12. Shared config lives in [`.env`](.env) (from [`.env.example`](.env.example) on first setup). Layout: `frontend/`, `backend/`, and `openapi.yaml` at the repo root.
+The container includes Node 22 and Python 3.12. Its Compose definition is [`compose.devcontainer.yml`](compose.devcontainer.yml). Shared config lives in [`.env`](.env) (from [`.env.example`](.env.example) on first setup). Layout: `frontend/`, `backend/`, and `openapi.yaml` at the repo root.
+
+### Stable local environment
+
+The default [`compose.yaml`](compose.yaml) is for human manual QA, exploratory work, and integration checks. It runs the built frontend on port 4173, the API on port 8000, PostgreSQL, and an explicit migration job. It is production-like, but it is not the deployment definition for a real production system.
+
+Use `just` for all Compose stack lifecycle commands from the repo root:
+
+```sh
+just local-up       # build and start PostgreSQL, migrations, API, and frontend
+just local-ps       # check service health and migration completion
+just local-logs     # follow all service logs
+just local-down     # stop services and keep the database volume
+just local-reset    # stop services and delete this checkout's database volume
+```
+
+Use a distinct project name and host ports for each checkout or branch. This prevents branches from sharing database data or competing for ports:
+
+```sh
+LOCAL_PROJECT=family-kanban-feature-x LOCAL_API_PORT=8100 LOCAL_FRONTEND_PORT=4273 just local-up
+```
+
+Run `just local-config` to inspect the fully rendered configuration. Do not run the reload-based `make dev` stack and the stable local stack on the same ports at the same time.
 
 ### Git over SSH (agent forwarding)
 
@@ -62,67 +86,6 @@ npm run dev
 
 With Make and dependencies already installed: `make frontend` from the repo root.
 
-## Production (single Linux VM)
+## Future deployment
 
-This repository keeps the local DevContainer intentionally lightweight and uses a separate production stack for deployment. The production workflow is defined in [`compose.production.yml`](compose.production.yml).
-
-### Requirements
-
-- Docker Engine + Docker Compose v2 on the target VM
-- A host environment file with non-secret runtime values (for example, a server `.env` file)
-- PostgreSQL credentials and application settings, but do not commit secrets to the repository
-
-### Environment
-
-Copy the example environment file and adjust the values for the VM:
-
-```sh
-cp .env.example .env
-```
-
-For production, set or override these values in the deployment environment:
-
-```env
-DATABASE_URL=postgresql+psycopg://family:family@db:5432/family_kanban
-POSTGRES_USER=family
-POSTGRES_PASSWORD=family
-POSTGRES_DB=family_kanban
-EMAIL_DELIVERY=console
-VITE_API_BASE_URL=http://localhost:8000
-```
-
-Keep `RESEND_API_KEY` and `EMAIL_FROM` set only in the running server environment if you want real email delivery.
-
-### Start the stack
-
-From the repo root:
-
-```sh
-docker compose -f compose.production.yml up --build -d
-```
-
-This starts:
-
-- PostgreSQL on the internal Docker network
-- a one-shot migration job that runs Alembic migrations
-- the FastAPI app on `http://localhost:8000`
-- the frontend on `http://localhost:4173`
-
-### Check status
-
-```sh
-docker compose -f compose.production.yml ps
-docker compose -f compose.production.yml logs -f api
-```
-
-If you need to re-run the migrations manually:
-
-```sh
-docker compose -f compose.production.yml run --rm migration sh -lc 'uv run alembic upgrade head'
-```
-
-### Notes
-
-- The production stack is intentionally a simple direct-port deployment for a trusted VM or an environment behind existing ingress/TLS.
-- The database port is not published externally in the first stack; the app and database communicate over the internal Compose network.
-- The PostgreSQL data volume is persistent, but it is not a backup. Plan separate backup/restore steps for real operations.
+The stable local stack is intentionally not a production deployment definition. A future deployment configuration should be named separately, such as `compose.production.yml`, and should define its own secrets, lifecycle, backups, ports, and operational policies. Its service topology can be shared with [`compose.yaml`](compose.yaml), but its data and operational settings must remain environment-specific.

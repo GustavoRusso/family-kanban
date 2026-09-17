@@ -16,6 +16,9 @@ help:
 	@echo "  make test-backend   Run backend tests (pytest)"
 	@echo "  make lint           Lint frontend (eslint)"
 	@echo ""
+	@echo "Compose stack commands are managed via `just`:"
+	@echo "  just --list"
+	@echo ""
 
 install sync:
 	cd $(FRONTEND_DIR) && npm install
