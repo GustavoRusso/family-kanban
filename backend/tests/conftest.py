@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -14,8 +16,11 @@ from app.main import create_app
 
 @pytest.fixture
 def engine():
+    db_path = Path("/tmp/family-kanban-test.db")
+    if db_path.exists():
+        db_path.unlink()
     eng = create_engine(
-        "sqlite://",
+        f"sqlite:///{db_path}",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
         future=True,

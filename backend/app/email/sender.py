@@ -10,7 +10,7 @@ import resend
 from app.config import get_email_from, get_login_code_ttl_minutes, get_resend_api_key
 from app.errors import AppError
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("app.email.sender")
 
 
 class EmailSender(Protocol):
@@ -46,13 +46,12 @@ class ConsoleEmailSender:
         self, email: str, code: str, *, ttl_minutes: int | None = None
     ) -> None:
         minutes = ttl_minutes if ttl_minutes is not None else get_login_code_ttl_minutes()
-        logger.warning(
-            "EMAIL_DELIVERY=console — login code for %s is %s (expires in %s minute%s)",
-            email,
-            code,
-            minutes,
-            "" if minutes == 1 else "s",
+        message = (
+            f"EMAIL_DELIVERY=console — login code for {email} is {code} "
+            f"(expires in {minutes} minute{'' if minutes == 1 else 's'})"
         )
+        logging.getLogger().warning(message)
+        logger.warning(message)
 
 
 class ResendEmailSender:
