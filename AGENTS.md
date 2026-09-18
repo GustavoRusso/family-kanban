@@ -12,6 +12,8 @@ Assume the **DevContainer** (see [`.devcontainer/`](.devcontainer/)) for agent c
 
 Humans can run the stable local environment with the default `compose.yaml`. It builds the API and frontend, runs PostgreSQL and migrations, and keeps data in a named volume. Use `just local-up`, `just local-down`, and `just local-reset`; set `LOCAL_PROJECT`, `LOCAL_API_PORT`, and `LOCAL_FRONTEND_PORT` per checkout so branches do not share data or host ports.
 
+Tooling split: use `make` for development inside the DevContainer and `just` for the stable Docker Compose lifecycle. Ensure `just` is installed before running the Compose recipes; use `just --list` to inspect them.
+
 Layout:
 
 - `frontend/` — web app

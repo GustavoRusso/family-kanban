@@ -6,6 +6,12 @@
 
 This repository has two local workflows. Agents use the lightweight Dev Container for fast reload-based coding. Humans use the default Compose stack for a stable PostgreSQL-backed environment with built images and persistent data.
 
+### Tooling split
+
+Use `make` for the development workflow inside the Dev Container: dependency installation, reload-based servers, tests, and linting. Use `just` for the stable Docker Compose stack defined by [`compose.yaml`](compose.yaml): starting, stopping, inspecting, resetting, and viewing logs.
+
+Install [Just](https://github.com/casey/just#installation) before running the Compose commands. From the repository root, run `just --list` to see the available recipes.
+
 ### Agent development
 
 1. Open this repository in VS Code or Cursor.
