@@ -10,7 +10,13 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM nginx:1.27-alpine
-COPY --from=build /app/.output/public /usr/share/nginx/html
+FROM node:22-alpine
+WORKDIR /app
+
+ENV HOST=0.0.0.0 \
+	PORT=80
+
+COPY --from=build /app/.output ./.output
+
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["node", ".output/server/index.mjs"]
