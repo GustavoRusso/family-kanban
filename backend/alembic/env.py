@@ -14,9 +14,7 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-current_url = config.get_main_option("sqlalchemy.url", "")
-if not current_url or current_url == "driver://user:pass@localhost/dbname":
-    config.set_main_option("sqlalchemy.url", get_database_url())
+config.set_main_option("sqlalchemy.url", get_database_url())
 
 target_metadata = Base.metadata
 
